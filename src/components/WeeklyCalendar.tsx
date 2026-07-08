@@ -1,4 +1,5 @@
 import type { WindSession } from "../lib/types";
+import { getHolidayExcuse } from "../lib/holidayExcuses";
 import { qualityClass, qualityLabel } from "../lib/quality";
 import { addDays, isoLocal, minutesSinceMidnight, startOfDay } from "../lib/date";
 
@@ -43,16 +44,22 @@ export function WeeklyCalendar({ sessions }: Props) {
           {days.map((day) => {
             const key = isoLocal(day);
             const daySessions = byDate.get(key) || [];
+            const holidayExcuse = getHolidayExcuse(key);
 
             return (
               <div className="day-col" key={key}>
                 <div className="day-title">
                   <b>{day.toLocaleDateString(undefined, { weekday: "short" })}</b>
                   <span>{day.toLocaleDateString(undefined, { month: "short", day: "numeric" })}</span>
+                  {holidayExcuse && <span className="day-holiday">{holidayExcuse}</span>}
                 </div>
 
                 <div className="day-track">
-                  {daySessions.length === 0 && <div className="no-wind">Zoom might survive 😇</div>}
+                  {daySessions.length === 0 && (
+                    <div className="no-wind">
+                      {holidayExcuse ? "Public holiday — excuse unlocked 🎉" : "Zoom might survive 😇"}
+                    </div>
+                  )}
 
                   {daySessions.map((session) => {
                     const start = new Date(session.start);

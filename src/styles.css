@@ -447,6 +447,15 @@ main {
   color: var(--muted);
 }
 
+.day-holiday {
+  display: block;
+  margin-top: 6px;
+  font-size: 0.58rem;
+  line-height: 1.35;
+  color: var(--blue);
+  font-style: italic;
+}
+
 .day-track {
   position: relative;
   flex: 1;
@@ -581,6 +590,14 @@ main {
   text-transform: uppercase;
   letter-spacing: 0.04em;
   margin-bottom: 4px;
+}
+
+.session-excuse {
+  font-size: 0.78rem;
+  color: var(--muted);
+  font-style: italic;
+  line-height: 1.45;
+  margin-bottom: 8px;
 }
 
 .session-card h3 {
