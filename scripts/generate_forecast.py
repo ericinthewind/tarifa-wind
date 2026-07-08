@@ -179,7 +179,7 @@ def quality(avg_wind: float, score: int) -> tuple[str, str]:
         return "Excellent", "🟢"
     if avg_wind >= GOOD_WIND_KT or score >= 70:
         return "Good", "🟡"
-    return "Possible", "⚪"
+    return "Worth it", "🤙"
 
 
 def make_sessions(blocks: list[list[Hour]]) -> list[dict]:
