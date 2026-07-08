@@ -7,7 +7,6 @@ import { sampleForecast } from "./lib/sampleForecast";
 import { SessionCard } from "./components/SessionCard";
 import { StatCard } from "./components/StatCard";
 import { WeeklyCalendar } from "./components/WeeklyCalendar";
-import { WindChart } from "./components/WindChart";
 
 export default function App() {
   const [forecast, setForecast] = useState<Forecast>(sampleForecast);
@@ -125,8 +124,6 @@ export default function App() {
           )}
         </div>
       </section>
-
-      <WindChart sessions={sessions} />
 
       <footer>
         <p className="footer-meta">
