@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { CalendarDays, Compass, Star, Sun, Waves, Wind } from "lucide-react";
+import { CalendarDays, Compass, Sun, Waves, Wind } from "lucide-react";
 import type { Forecast, WindSession } from "./lib/types";
 import { formatGeneratedAt, DISPLAY_LOCALE } from "./lib/date";
 import { getKiteExcuse } from "./lib/dailyExcuses";
@@ -32,9 +32,12 @@ export default function App() {
   }, []);
 
   const sessions: WindSession[] = forecast.sessions || [];
-  const bestSession = sessions.length
-    ? sessions.reduce((best, s) => (s.score > best.score ? s : best), sessions[0])
-    : null;
+  const rideCount = sessions.length;
+  const rideCountValue = rideCount === 0
+    ? "0 sesh 😭"
+    : rideCount === 1
+      ? "1 sesh incoming 🪁"
+      : `${rideCount} sesh incoming 🪁🔥`;
   const windHours = sessions.reduce((sum: number, session: WindSession) => sum + session.durationHours, 0).toFixed(0);
   const nextRide = sessions[0]
     ? `${new Date(sessions[0].start).toLocaleDateString(DISPLAY_LOCALE, { weekday: "short" })} ${sessions[0].startTime}`
@@ -112,8 +115,7 @@ export default function App() {
       </section>
 
       <section className="stats">
-        <StatCard icon={<Wind />} label="Ride windows" value={sessions.length} />
-        <StatCard icon={<Star />} label="Peak send" value={bestSession ? `${qualityLabel(bestSession.quality)} · ${bestSession.avgWindKt} kt` : "—"} />
+        <StatCard icon={<Wind />} label="next 7 days — laptop stays closed, wind wins 🤙🌬️" value={rideCountValue} />
         <StatCard icon={<Sun />} label="Hours of freedom" value={windHours} />
         <StatCard icon={<Waves />} label="Biggest swell" value={maxWave} />
       </section>
