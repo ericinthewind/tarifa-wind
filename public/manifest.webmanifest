@@ -1,0 +1,16 @@
+{
+  "name": "Tarifa Wind",
+  "short_name": "Tarifa Wind",
+  "description": "Wind first. Meetings second.",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#06111f",
+  "theme_color": "#0f172a",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}
