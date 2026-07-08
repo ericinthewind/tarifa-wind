@@ -12,6 +12,8 @@ from zoneinfo import ZoneInfo
 SPOT_NAME = os.getenv("SPOT_NAME", "Tarifa")
 LATITUDE = float(os.getenv("LATITUDE", "36.0143"))
 LONGITUDE = float(os.getenv("LONGITUDE", "-5.6044"))
+VALDEVAQUEROS_LAT = float(os.getenv("VALDEVAQUEROS_LAT", "36.0597"))
+VALDEVAQUEROS_LON = float(os.getenv("VALDEVAQUEROS_LON", "-5.6531"))
 TIMEZONE = os.getenv("TIMEZONE", "Europe/Madrid")
 FORECAST_DAYS = int(os.getenv("FORECAST_DAYS", "7"))
 PROFILE = os.getenv("PROFILE", "kite").lower()
@@ -34,6 +36,12 @@ MAX_WAVE_M = float(os.getenv("MAX_WAVE_M", defaults["MAX_WAVE_M"]))
 MIN_BLOCK_HOURS = int(os.getenv("MIN_BLOCK_HOURS", defaults["MIN_BLOCK_HOURS"]))
 MAX_BLOCK_HOURS = int(os.getenv("MAX_BLOCK_HOURS", defaults["MAX_BLOCK_HOURS"]))
 PONIENTE_START_HOUR = int(os.getenv("PONIENTE_START_HOUR", defaults["PONIENTE_START_HOUR"]))
+THERMIC_USE_80M = os.getenv("THERMIC_USE_80M", "1").lower() not in {"0", "false", "no"}
+
+FORECAST_SPOTS: list[tuple[str, float, float]] = [
+    ("Tarifa", LATITUDE, LONGITUDE),
+    ("Valdevaqueros", VALDEVAQUEROS_LAT, VALDEVAQUEROS_LON),
+]
 
 
 @dataclass
@@ -44,6 +52,8 @@ class Hour:
     direction: float | None
     wave_m: float | None
     wave_period: float | None
+    wind_80m_kt: float | None = None
+    wind_120m_kt: float | None = None
 
 
 def kt(kmh: float | None) -> float | None:
@@ -108,25 +118,64 @@ def wind_arrow(deg: float | None) -> str:
     return arrows[int(((deg + 22.5) % 360) // 45)]
 
 
-def fetch_forecast() -> dict:
+def fetch_forecast(lat: float, lon: float) -> dict:
     return fetch_json("https://api.open-meteo.com/v1/forecast", {
-        "latitude": LATITUDE,
-        "longitude": LONGITUDE,
-        "hourly": "wind_speed_10m,wind_gusts_10m,wind_direction_10m",
+        "latitude": lat,
+        "longitude": lon,
+        "hourly": "wind_speed_10m,wind_gusts_10m,wind_direction_10m,wind_speed_80m,wind_speed_120m",
         "wind_speed_unit": "kmh",
         "timezone": TIMEZONE,
         "forecast_days": FORECAST_DAYS,
     })
 
 
-def fetch_marine() -> dict:
+def fetch_marine(lat: float, lon: float) -> dict:
     return fetch_json("https://marine-api.open-meteo.com/v1/marine", {
-        "latitude": LATITUDE,
-        "longitude": LONGITUDE,
+        "latitude": lat,
+        "longitude": lon,
         "hourly": "wave_height,wave_period,wave_direction",
         "timezone": TIMEZONE,
         "forecast_days": min(FORECAST_DAYS, 8),
     })
+
+
+def effective_wind_kt(hour: Hour) -> float | None:
+    """Afternoon Poniente thermals are often stronger aloft than at 10 m."""
+    if hour.wind_kt is None:
+        return None
+    if (
+        THERMIC_USE_80M
+        and is_poniente(hour.direction)
+        and hour.time.hour >= PONIENTE_START_HOUR
+    ):
+        aloft = [v for v in (hour.wind_80m_kt, hour.wind_120m_kt) if v is not None]
+        if aloft:
+            return max(hour.wind_kt, *aloft)
+    return hour.wind_kt
+
+
+def merge_spot_hours(spot_hours: list[list[Hour]]) -> list[Hour]:
+    by_time: dict[datetime, Hour] = {}
+    for hours in spot_hours:
+        for hour in hours:
+            existing = by_time.get(hour.time)
+            if existing is None:
+                by_time[hour.time] = hour
+                continue
+
+            pick_new = (hour.wind_kt or 0) >= (existing.wind_kt or 0)
+            stronger, weaker = (hour, existing) if pick_new else (existing, hour)
+            by_time[hour.time] = Hour(
+                time=hour.time,
+                wind_kt=max(existing.wind_kt or 0, hour.wind_kt or 0),
+                gust_kt=max(existing.gust_kt or 0, hour.gust_kt or 0),
+                direction=stronger.direction if (stronger.wind_kt or 0) > 0 else existing.direction,
+                wave_m=max(existing.wave_m or 0, hour.wave_m or 0) or None,
+                wave_period=stronger.wave_period or existing.wave_period,
+                wind_80m_kt=max(existing.wind_80m_kt or 0, hour.wind_80m_kt or 0) or None,
+                wind_120m_kt=max(existing.wind_120m_kt or 0, hour.wind_120m_kt or 0) or None,
+            )
+    return sorted(by_time.values(), key=lambda hour: hour.time)
 
 
 def merge_hours(weather: dict, marine: dict) -> list[Hour]:
@@ -146,16 +195,19 @@ def merge_hours(weather: dict, marine: dict) -> list[Hour]:
             direction=w.get("wind_direction_10m", [None])[i],
             wave_m=m.get("wave_height", [None] * len(marine_by_time))[mi] if mi is not None else None,
             wave_period=m.get("wave_period", [None] * len(marine_by_time))[mi] if mi is not None else None,
+            wind_80m_kt=kt(w.get("wind_speed_80m", [None])[i]),
+            wind_120m_kt=kt(w.get("wind_speed_120m", [None])[i]),
         ))
     return hours
 
 
 def is_usable(hour: Hour) -> bool:
+    wind = effective_wind_kt(hour)
     poniente_ok = not is_poniente(hour.direction) or hour.time.hour >= PONIENTE_START_HOUR
     return (
-        hour.wind_kt is not None
+        wind is not None
         and hour.gust_kt is not None
-        and hour.wind_kt >= MIN_WIND_KT
+        and wind >= MIN_WIND_KT
         and hour.gust_kt <= MAX_GUST_KT
         and direction_in_sectors(hour.direction, parse_sectors(WIND_SECTORS))
         and poniente_ok
@@ -209,7 +261,7 @@ def make_sessions(blocks: list[list[Hour]]) -> list[dict]:
     for block in blocks:
         start = block[0].time
         end = block[-1].time + timedelta(hours=1)
-        avg_wind = sum(h.wind_kt or 0 for h in block) / len(block)
+        avg_wind = sum(effective_wind_kt(h) or 0 for h in block) / len(block)
         max_gust = max(h.gust_kt or 0 for h in block)
         avg_dir = sum(h.direction or 0 for h in block) / len(block)
         max_wave = max(h.wave_m or 0 for h in block)
@@ -300,9 +352,11 @@ def make_ics(sessions: list[dict]) -> str:
 
 
 def main() -> None:
-    weather = fetch_forecast()
-    marine = fetch_marine()
-    sessions = make_sessions(split_blocks(build_blocks(merge_hours(weather, marine))))
+    spot_hours = [
+        merge_hours(fetch_forecast(lat, lon), fetch_marine(lat, lon))
+        for _, lat, lon in FORECAST_SPOTS
+    ]
+    sessions = make_sessions(split_blocks(build_blocks(merge_spot_hours(spot_hours))))
 
     payload = {
         "spot": SPOT_NAME,
@@ -318,7 +372,9 @@ def main() -> None:
             "minBlockHours": MIN_BLOCK_HOURS,
             "maxBlockHours": MAX_BLOCK_HOURS,
             "ponienteStartHour": PONIENTE_START_HOUR,
+            "thermicAloft": THERMIC_USE_80M,
             "windSectors": WIND_SECTORS,
+            "spots": [{"name": name, "lat": lat, "lon": lon} for name, lat, lon in FORECAST_SPOTS],
         },
         "sessions": sessions,
     }
