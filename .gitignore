@@ -6,3 +6,4 @@ __pycache__/
 .env
 public/forecast.json
 public/tarifa-wind.ics
+tsconfig.tsbuildinfo

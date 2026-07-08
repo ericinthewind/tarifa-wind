@@ -1,4 +1,4 @@
-export type SessionQuality = "Excellent" | "Good" | "Possible";
+export type SessionQuality = "Excellent" | "Good" | "Worth it";
 
 export type WindSession = {
   id: string;

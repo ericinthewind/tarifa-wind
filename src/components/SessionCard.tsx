@@ -1,4 +1,5 @@
 import type { WindSession } from "../lib/types";
+import { qualityClass, qualityLabel } from "../lib/quality";
 
 type Props = {
   session: WindSession;
@@ -6,10 +7,10 @@ type Props = {
 
 export function SessionCard({ session }: Props) {
   return (
-    <article className={`session-card ${session.quality.toLowerCase()}`}>
+    <article className={`session-card ${qualityClass(session.quality)}`}>
       <div className="session-top">
-        <span className="pill">{session.emoji} {session.quality}</span>
-        <span className="score">⭐ {session.score}</span>
+        <span className="pill">{session.emoji} {qualityLabel(session.quality)}</span>
+        <span className="session-duration">{session.durationHours}h of freedom</span>
       </div>
       <h3>{session.windArrow} {session.windLabel}</h3>
       <p className="time">{session.startTime}–{session.endTime} · {session.durationHours}h</p>
