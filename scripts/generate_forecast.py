@@ -20,7 +20,7 @@ OUTPUT_JSON = os.getenv("OUTPUT_JSON", "public/forecast.json")
 OUTPUT_ICS = os.getenv("OUTPUT_ICS", "public/tarifa-wind.ics")
 
 PROFILE_DEFAULTS = {
-    "kite": {"MIN_WIND_KT": 16, "GOOD_WIND_KT": 20, "EXCELLENT_WIND_KT": 25, "MAX_GUST_KT": 40, "MAX_WAVE_M": 1.8, "MIN_BLOCK_HOURS": 2},
+    "kite": {"MIN_WIND_KT": 10, "GOOD_WIND_KT": 14, "EXCELLENT_WIND_KT": 17, "MAX_GUST_KT": 30, "MAX_WAVE_M": 1.2, "MIN_BLOCK_HOURS": 2},
     "wingfoil": {"MIN_WIND_KT": 12, "GOOD_WIND_KT": 16, "EXCELLENT_WIND_KT": 22, "MAX_GUST_KT": 38, "MAX_WAVE_M": 2.2, "MIN_BLOCK_HOURS": 2},
     "windsurf": {"MIN_WIND_KT": 18, "GOOD_WIND_KT": 22, "EXCELLENT_WIND_KT": 28, "MAX_GUST_KT": 45, "MAX_WAVE_M": 2.5, "MIN_BLOCK_HOURS": 2},
     "custom": {"MIN_WIND_KT": 16, "GOOD_WIND_KT": 20, "EXCELLENT_WIND_KT": 25, "MAX_GUST_KT": 40, "MAX_WAVE_M": 1.8, "MIN_BLOCK_HOURS": 2},
