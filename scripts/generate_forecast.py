@@ -225,7 +225,7 @@ def make_sessions(blocks: list[list[Hour]]) -> list[dict]:
             "date": start.date().isoformat(),
             "startTime": start.strftime("%H:%M"),
             "endTime": end.strftime("%H:%M"),
-            "title": f"{emoji} {q} {label}: {avg_wind:.0f} kt · score {score}",
+            "title": f"{emoji} {q} {label}: {avg_wind:.0f} kt #· score {score}",
             "quality": q,
             "emoji": emoji,
             "windLabel": label,
@@ -236,15 +236,15 @@ def make_sessions(blocks: list[list[Hour]]) -> list[dict]:
             "compass": compass(avg_dir),
             "maxWaveM": round(max_wave, 1),
             "avgPeriodS": round(avg_period),
-            "score": score,
+            #"score": score,
             "durationHours": round((end - start).total_seconds() / 3600, 1),
             "description": (
                 f"{SPOT_NAME} wind forecast\n"
-                f"Profile: {PROFILE}\n"
+                #f"Profile: {PROFILE}\n"
                 f"Wind: {avg_wind:.1f} kt {compass(avg_dir)} / {avg_dir:.0f}° ({label})\n"
                 f"Gusts: {max_gust:.1f} kt\n"
                 f"Waves: {max_wave:.1f} m, period ~{avg_period:.0f} s\n"
-                f"Score: {score}/100"
+                #f"Score: {score}/100"
             ),
         })
     return sessions
@@ -306,7 +306,7 @@ def main() -> None:
     payload = {
         "spot": SPOT_NAME,
         "timezone": TIMEZONE,
-        "profile": PROFILE,
+        #"profile": PROFILE,
         "generatedAt": datetime.now(ZoneInfo(TIMEZONE)).isoformat(),
         "criteria": {
             "minWindKt": MIN_WIND_KT,
