@@ -20,10 +20,10 @@ OUTPUT_JSON = os.getenv("OUTPUT_JSON", "public/forecast.json")
 OUTPUT_ICS = os.getenv("OUTPUT_ICS", "public/tarifa-wind.ics")
 
 PROFILE_DEFAULTS = {
-    "kite": {"MIN_WIND_KT": 10, "GOOD_WIND_KT": 14, "EXCELLENT_WIND_KT": 17, "MAX_GUST_KT": 30, "MAX_WAVE_M": 1.2, "MIN_BLOCK_HOURS": 2, "MAX_BLOCK_HOURS": 3},
-    "wingfoil": {"MIN_WIND_KT": 12, "GOOD_WIND_KT": 16, "EXCELLENT_WIND_KT": 22, "MAX_GUST_KT": 38, "MAX_WAVE_M": 2.2, "MIN_BLOCK_HOURS": 2, "MAX_BLOCK_HOURS": 3},
-    "windsurf": {"MIN_WIND_KT": 18, "GOOD_WIND_KT": 22, "EXCELLENT_WIND_KT": 28, "MAX_GUST_KT": 45, "MAX_WAVE_M": 2.5, "MIN_BLOCK_HOURS": 2, "MAX_BLOCK_HOURS": 3},
-    "custom": {"MIN_WIND_KT": 16, "GOOD_WIND_KT": 20, "EXCELLENT_WIND_KT": 25, "MAX_GUST_KT": 40, "MAX_WAVE_M": 1.8, "MIN_BLOCK_HOURS": 2, "MAX_BLOCK_HOURS": 3},
+    "kite": {"MIN_WIND_KT": 10, "GOOD_WIND_KT": 14, "EXCELLENT_WIND_KT": 17, "MAX_GUST_KT": 30, "MAX_WAVE_M": 1.2, "MIN_BLOCK_HOURS": 2, "MAX_BLOCK_HOURS": 3, "PONIENTE_START_HOUR": 14},
+    "wingfoil": {"MIN_WIND_KT": 12, "GOOD_WIND_KT": 16, "EXCELLENT_WIND_KT": 22, "MAX_GUST_KT": 38, "MAX_WAVE_M": 2.2, "MIN_BLOCK_HOURS": 2, "MAX_BLOCK_HOURS": 3, "PONIENTE_START_HOUR": 14},
+    "windsurf": {"MIN_WIND_KT": 18, "GOOD_WIND_KT": 22, "EXCELLENT_WIND_KT": 28, "MAX_GUST_KT": 45, "MAX_WAVE_M": 2.5, "MIN_BLOCK_HOURS": 2, "MAX_BLOCK_HOURS": 3, "PONIENTE_START_HOUR": 14},
+    "custom": {"MIN_WIND_KT": 16, "GOOD_WIND_KT": 20, "EXCELLENT_WIND_KT": 25, "MAX_GUST_KT": 40, "MAX_WAVE_M": 1.8, "MIN_BLOCK_HOURS": 2, "MAX_BLOCK_HOURS": 3, "PONIENTE_START_HOUR": 14},
 }
 defaults = PROFILE_DEFAULTS.get(PROFILE, PROFILE_DEFAULTS["kite"])
 MIN_WIND_KT = float(os.getenv("MIN_WIND_KT", defaults["MIN_WIND_KT"]))
@@ -33,6 +33,7 @@ MAX_GUST_KT = float(os.getenv("MAX_GUST_KT", defaults["MAX_GUST_KT"]))
 MAX_WAVE_M = float(os.getenv("MAX_WAVE_M", defaults["MAX_WAVE_M"]))
 MIN_BLOCK_HOURS = int(os.getenv("MIN_BLOCK_HOURS", defaults["MIN_BLOCK_HOURS"]))
 MAX_BLOCK_HOURS = int(os.getenv("MAX_BLOCK_HOURS", defaults["MAX_BLOCK_HOURS"]))
+PONIENTE_START_HOUR = int(os.getenv("PONIENTE_START_HOUR", defaults["PONIENTE_START_HOUR"]))
 
 
 @dataclass
@@ -82,14 +83,21 @@ def compass(deg: float | None) -> str:
     return dirs[int((deg + 11.25) // 22.5) % 16]
 
 
+def is_poniente(deg: float | None) -> bool:
+    if deg is None:
+        return False
+    d = deg % 360
+    return 225 <= d <= 315
+
+
 def wind_label(deg: float | None) -> str:
     if deg is None:
         return "Unknown"
+    if is_poniente(deg):
+        return "Poniente"
     d = deg % 360
     if 45 <= d <= 135:
         return "Levante"
-    if 225 <= d <= 315:
-        return "Poniente"
     return compass(d)
 
 
@@ -143,12 +151,14 @@ def merge_hours(weather: dict, marine: dict) -> list[Hour]:
 
 
 def is_usable(hour: Hour) -> bool:
+    poniente_ok = not is_poniente(hour.direction) or hour.time.hour >= PONIENTE_START_HOUR
     return (
         hour.wind_kt is not None
         and hour.gust_kt is not None
         and hour.wind_kt >= MIN_WIND_KT
         and hour.gust_kt <= MAX_GUST_KT
         and direction_in_sectors(hour.direction, parse_sectors(WIND_SECTORS))
+        and poniente_ok
         and (hour.wave_m is None or hour.wave_m <= MAX_WAVE_M)
     )
 
@@ -306,6 +316,7 @@ def main() -> None:
             "maxWaveM": MAX_WAVE_M,
             "minBlockHours": MIN_BLOCK_HOURS,
             "maxBlockHours": MAX_BLOCK_HOURS,
+            "ponienteStartHour": PONIENTE_START_HOUR,
             "windSectors": WIND_SECTORS,
         },
         "sessions": sessions,
