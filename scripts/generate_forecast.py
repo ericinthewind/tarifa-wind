@@ -225,7 +225,7 @@ def make_sessions(blocks: list[list[Hour]]) -> list[dict]:
             "date": start.date().isoformat(),
             "startTime": start.strftime("%H:%M"),
             "endTime": end.strftime("%H:%M"),
-            "title": f"{emoji} {q} {label}: {avg_wind:.0f} kt
+            "title": f"{emoji} {q} {label}: {avg_wind:.0f} kn",
         #· score {score}",
             "quality": q,
             "emoji": emoji,
@@ -242,7 +242,7 @@ def make_sessions(blocks: list[list[Hour]]) -> list[dict]:
             "description": (
                 f"{SPOT_NAME} wind forecast\n"
                 #f"Profile: {PROFILE}\n"
-                f"Wind: {avg_wind:.1f} kt {compass(avg_dir)} / {avg_dir:.0f}° ({label})\n"
+                f"Wind: {avg_wind:.1f} kn {compass(avg_dir)} / {avg_dir:.0f}° ({label})\n"
                 f"Gusts: {max_gust:.1f} kt\n"
                 f"Waves: {max_wave:.1f} m, period ~{avg_period:.0f} s\n"
                 #f"Score: {score}/100"
