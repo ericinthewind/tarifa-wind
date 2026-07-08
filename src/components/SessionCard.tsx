@@ -6,12 +6,19 @@ type Props = {
 };
 
 export function SessionCard({ session }: Props) {
+  const dayLabel = new Date(session.start).toLocaleDateString(undefined, {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  });
+
   return (
     <article className={`session-card ${qualityClass(session.quality)}`}>
       <div className="session-top">
         <span className="pill">{session.emoji} {qualityLabel(session.quality)}</span>
         <span className="session-duration">{session.durationHours}h of freedom</span>
       </div>
+      <p className="session-day">{dayLabel}</p>
       <h3>{session.windArrow} {session.windLabel}</h3>
       <p className="time">{session.startTime}–{session.endTime} · {session.durationHours}h</p>
       <div className="session-grid">
