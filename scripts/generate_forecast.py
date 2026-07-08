@@ -197,9 +197,9 @@ def score_session(avg_wind: float, max_gust: float, max_wave: float) -> int:
 
 
 def quality(avg_wind: float, score: int) -> tuple[str, str]:
-    if avg_wind >= EXCELLENT_WIND_KT or score >= 85:
+    if avg_wind >= EXCELLENT_WIND_KT or score >= 70:
         return "Excellent", "🟢"
-    if avg_wind >= GOOD_WIND_KT or score >= 70:
+    if avg_wind >= GOOD_WIND_KT or score >= 50:
         return "Good", "🟡"
     return "Worth it", "🤙"
 
@@ -225,7 +225,8 @@ def make_sessions(blocks: list[list[Hour]]) -> list[dict]:
             "date": start.date().isoformat(),
             "startTime": start.strftime("%H:%M"),
             "endTime": end.strftime("%H:%M"),
-            "title": f"{emoji} {q} {label}: {avg_wind:.0f} kt #· score {score}",
+            "title": f"{emoji} {q} {label}: {avg_wind:.0f} kt
+        #· score {score}",
             "quality": q,
             "emoji": emoji,
             "windLabel": label,
